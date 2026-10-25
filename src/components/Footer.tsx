@@ -92,12 +92,6 @@ export function Footer() {
 
         <div className="ft-bottom">
           <span>MIT | Apache-2.0 · 版权所有 (c) 2026 ArtCraft Team 与 FilmCraft 贡献者</span>
-          <span className="font-mono">
-            本站为 FilmCraft 中文介绍页 · 内容取自{' '}
-            <a href={GITHUB} target="_blank" rel="noreferrer" className="underline decoration-line-2 underline-offset-2">
-              官方 README
-            </a>
-          </span>
         </div>
       </div>
     </footer>
