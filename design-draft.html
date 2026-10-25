@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FilmCraft — 用纯 Rust 打造的开源专业非线性视频编辑器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0C0F;
+  --bg-2:#0C0F13;
+  --panel:#111519;
+  --panel-2:#151A20;
+  --line:#1E252C;
+  --line-2:#2C353E;
+  --text:#E9E6E0;
+  --dim:#98A2AD;
+  --dim-2:#68727D;
+  --violet:#8B5CF6;
+  --green:#4FD1A5;
+  --amber:#E0A64A;
+  --magenta:#D9679B;
+  --blue:#4C8DE0;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:"Archivo","Noto Sans SC","PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",system-ui,sans-serif;
+  --cjk:"Noto Sans SC","PingFang SC","HarmonyOS Sans SC","Microsoft YaHei",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;background:var(--bg);color:var(--text);
+  font-family:var(--cjk);font-size:15px;line-height:1.7;
+  -webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;
+}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+::selection{background:rgba(139,92,246,.32);color:#fff}
+:focus-visible{outline:2px solid var(--violet);outline-offset:3px;border-radius:2px}
+section[id]{scroll-margin-top:72px}
+
+.wrap{width:min(1400px,100% - 64px);margin-inline:auto}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+
+/* ---------- header ---------- */
+.hdr{
+  position:fixed;inset:0 0 auto 0;height:58px;z-index:50;
+  background:rgba(10,12,15,.8);backdrop-filter:blur(16px) saturate(140%);
+  border-bottom:1px solid var(--line);
+}
+.hdr-in{height:100%;display:flex;align-items:center;gap:26px}
+.brand{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.brand img{width:22px;height:22px;border-radius:4px}
+.brand b{font-family:var(--sans);font-weight:700;font-size:16.5px;letter-spacing:-.02em}
+.brand i{
+  font-style:normal;font-family:var(--mono);font-size:10.5px;color:#B79BFF;
+  border:1px solid rgba(139,92,246,.42);background:rgba(139,92,246,.1);
+  padding:1px 5px;border-radius:3px;
+}
+.nav{display:flex;gap:1px;margin-left:4px;overflow:hidden}
+.nav a{font-size:13px;color:var(--dim);padding:6px 9px;border-radius:3px;transition:.15s;white-space:nowrap}
+.nav a:hover{color:var(--text);background:rgba(255,255,255,.045)}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:10px}
+.btn{
+  display:inline-flex;align-items:center;gap:7px;height:34px;padding:0 14px;
+  font-size:13px;font-weight:500;border-radius:4px;border:1px solid transparent;transition:.15s;
+}
+.btn-solid{background:var(--violet);color:#fff}
+.btn-solid:hover{background:#7C4DF0}
+.btn-ghost{border-color:var(--line-2);color:var(--text)}
+.btn-ghost:hover{background:rgba(255,255,255,.05);border-color:#3A444F}
+.progress{position:absolute;left:0;bottom:-1px;height:1.5px;background:var(--violet);width:0;box-shadow:0 0 10px rgba(139,92,246,.8)}
+
+/* ---------- hero ---------- */
+.hero{position:relative;padding:106px 0 0;overflow:hidden}
+.hero::before{
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:
+    radial-gradient(760px 420px at 12% -14%,rgba(139,92,246,.19),transparent 62%),
+    radial-gradient(680px 380px at 88% 2%,rgba(79,209,165,.05),transparent 60%);
+}
+.hero-in{position:relative;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:44px;align-items:start}
+.eyebrow{display:flex;align-items:center;gap:9px;font-size:12.5px;color:var(--dim);margin-bottom:20px}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--violet);box-shadow:0 0 0 3px rgba(139,92,246,.16)}
+h1{
+  font-family:var(--sans);font-weight:900;font-size:clamp(38px,4.4vw,62px);
+  line-height:1.14;letter-spacing:-.03em;margin:0 0 20px;
+}
+h1 span{display:block;font-weight:300;letter-spacing:-.01em}
+.hero-sub{font-size:15px;line-height:1.8;color:var(--dim);max-width:42ch;margin:0 0 8px}
+.hero-note{font-size:12.8px;color:var(--dim-2);margin:0 0 26px}
+.cta-row{display:flex;flex-wrap:wrap;gap:10px}
+.cta-row .btn{height:40px;padding:0 18px;font-size:13.5px}
+
+/* hero facts */
+.hero-facts{
+  display:grid;grid-template-columns:1fr 1fr;gap:0;
+  margin-top:26px;border-top:1px solid var(--line);
+}
+.hero-facts > div{padding:11px 10px 11px 0;border-bottom:1px solid var(--line)}
+.hero-facts > div:nth-child(2n){padding-left:14px;border-left:1px solid var(--line)}
+.hero-facts .v{font-family:var(--mono);font-size:14.5px;font-weight:500;letter-spacing:-.03em;line-height:1.3}
+.hero-facts .v small{font-size:10px;color:var(--dim);margin-left:2px}
+.hero-facts .k{font-size:11.2px;color:var(--dim-2);margin-top:1px}
+
+/* rows-in-one-panel */
+.proll{display:flex;flex-direction:column}
+.proll > div{padding:12px 0;border-top:1px solid var(--line)}
+.proll > div:first-child{padding-top:0;border-top:0}
+.proll > div:last-child{padding-bottom:0}
+.proll h3{font-family:var(--sans);font-size:13.2px;font-weight:600;margin:0 0 4px}
+.proll p{margin:0;font-size:12.6px;line-height:1.7;color:var(--dim)}
+
+/* ---------- workbench ---------- */
+.bench{
+  border:1px solid var(--line-2);border-radius:5px;overflow:hidden;background:#080A0D;
+  box-shadow:0 30px 80px -32px rgba(0,0,0,.92),0 0 0 1px rgba(255,255,255,.02);
+}
+.bench-top{display:flex;align-items:center;gap:4px;height:36px;padding:0 9px;border-bottom:1px solid var(--line);background:var(--panel-2)}
+.ws{display:flex;gap:2px}
+.ws button{font-size:12px;color:var(--dim);padding:4px 9px;border-radius:3px;transition:.15s;white-space:nowrap;flex:0 0 auto}
+.ws button:hover{color:var(--text)}
+.ws button[aria-selected="true"]{background:rgba(139,92,246,.16);color:#C6B2FF;box-shadow:inset 0 0 0 1px rgba(139,92,246,.3)}
+.bench-meta{margin-left:auto;font-family:var(--mono);font-size:10.5px;color:var(--dim-2)}
+.bench-screen{position:relative;background:#000;aspect-ratio:16/9;overflow:hidden}
+.bench-screen img{width:100%;height:100%;object-fit:cover;object-position:center top;transition:opacity .28s}
+.bench-screen::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 70px rgba(0,0,0,.5);pointer-events:none}
+.bench-tc{
+  position:absolute;left:9px;bottom:8px;z-index:2;font-family:var(--mono);font-size:10.5px;
+  color:rgba(255,255,255,.9);background:rgba(0,0,0,.55);padding:2px 6px;border-radius:2px;letter-spacing:.05em;
+}
+.bench-res{position:absolute;right:9px;bottom:8px;z-index:2;font-family:var(--mono);font-size:10px;color:rgba(255,255,255,.45)}
+
+.tl{padding:8px 10px 10px;background:#0B0E11;border-top:1px solid var(--line);position:relative}
+.tl-ruler{display:grid;grid-template-columns:30px 1fr;gap:6px;align-items:center;margin-bottom:5px}
+.tl-marks{display:flex;gap:3px;justify-content:flex-end}
+.tl-marks i{width:5px;height:5px;border-radius:1px;display:block}
+.tl-scale{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9px;color:var(--dim-2)}
+.tl-scale span{position:relative;padding-top:4px}
+.tl-scale span::before{content:"";position:absolute;top:0;left:0;width:1px;height:3px;background:var(--line-2)}
+.tl-row{display:grid;grid-template-columns:30px 1fr;gap:6px;margin-top:3px}
+.tl-tag{font-family:var(--mono);font-size:9.5px;color:var(--dim-2);display:flex;align-items:center;justify-content:flex-end;padding-right:2px}
+.tl-tag.on{color:#C6B2FF}
+.tl-lane{position:relative;height:17px;background:#0E1216;border-radius:2px;overflow:hidden}
+.tl-lane.tall{height:25px}
+.clip{position:absolute;top:1px;bottom:1px;border-radius:2px;overflow:hidden;display:flex;align-items:center;padding:0 5px}
+.clip span{font-family:var(--mono);font-size:8.5px;color:rgba(0,0,0,.72);font-weight:600;white-space:nowrap;overflow:hidden}
+.c-v{background:linear-gradient(180deg,#5D9BE8,#3E77C4)}
+.c-t{background:linear-gradient(180deg,#DB7BAD,#C2558C)}
+.c-a{background:linear-gradient(180deg,#4FD1A5,#2FA37E)}
+.clip .wave{position:absolute;inset:0;display:flex;align-items:center;gap:1px;padding:2px 3px;opacity:.58}
+.clip .wave i{flex:1;background:rgba(0,0,0,.45);border-radius:.5px;min-height:1px}
+.playhead{position:absolute;top:0;bottom:0;width:1px;background:#B99BFF;box-shadow:0 0 8px rgba(139,92,246,.7);z-index:3;pointer-events:none}
+.playhead::before{content:"";position:absolute;top:-1px;left:-4px;width:9px;height:9px;background:#B99BFF;clip-path:polygon(0 0,100% 0,50% 100%)}
+.bench-cap{font-size:11.5px;color:var(--dim-2);margin-top:9px;line-height:1.6}
+
+/* ---------- section shell ---------- */
+.sec{padding:58px 0;border-top:1px solid var(--line);position:relative}
+.sec-head{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:44px;align-items:start;margin-bottom:26px}
+h2{
+  font-family:var(--sans);font-size:clamp(26px,2.5vw,35px);font-weight:700;
+  letter-spacing:-.03em;line-height:1.2;margin:0;display:flex;align-items:center;gap:14px;
+}
+h2::before{content:"";width:3px;height:.86em;background:var(--violet);border-radius:1px;flex-shrink:0}
+.sec-lead{font-size:13.8px;color:var(--dim);line-height:1.8;margin:10px 0 0;max-width:56ch}
+.spec{display:grid;gap:0;margin:0;border-top:1px solid var(--line);padding-top:2px}
+.spec-row{display:flex;gap:14px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line)}
+.spec-row dt{font-size:11.8px;color:var(--dim-2);width:76px;flex-shrink:0}
+.spec-row dd{margin:0;font-family:var(--mono);font-size:12px;color:var(--text);text-align:left}
+
+/* ---------- tiles ---------- */
+.tiles{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:8px}
+.tile{
+  background:var(--panel);border:1px solid var(--line);border-radius:4px;
+  padding:15px 17px 16px;transition:border-color .18s,background .18s;
+}
+.tile:hover{border-color:var(--line-2);background:var(--panel-2)}
+.tile h3{font-family:var(--sans);font-size:13.5px;font-weight:600;letter-spacing:-.01em;margin:0 0 6px}
+.tile p{margin:0;font-size:12.8px;line-height:1.75;color:var(--dim)}
+.tile p + p{margin-top:7px}
+.tile .num{font-family:var(--mono);font-size:25px;font-weight:500;letter-spacing:-.03em;line-height:1.1}
+.tile .unit{font-size:11.5px;color:var(--dim-2);margin-top:4px;line-height:1.6}
+.s2{grid-column:span 2}.s3{grid-column:span 3}.s4{grid-column:span 4}
+.s5{grid-column:span 5}.s6{grid-column:span 6}.s7{grid-column:span 7}
+.s8{grid-column:span 8}.s12{grid-column:span 12}
+
+kbd{
+  display:inline-block;font-family:var(--mono);font-size:10.8px;line-height:1.5;padding:0 5px;margin:0 1px;
+  border:1px solid var(--line-2);border-bottom-width:2px;border-radius:3px;background:#0C1015;color:#D9D6D0;white-space:nowrap;
+}
+.taglist{display:flex;flex-wrap:wrap;gap:5px;margin-top:10px}
+.taglist b{font-weight:400;font-family:var(--mono);font-size:10.5px;color:var(--dim);border:1px solid var(--line);background:#0C1014;padding:2px 6px;border-radius:2px}
+
+/* feature rows */
+.frow{display:grid;grid-template-columns:186px minmax(0,1fr);gap:24px;padding:13px 0;border-top:1px solid var(--line)}
+.frow:first-child{border-top:0;padding-top:0}
+.frow h3{font-family:var(--sans);font-size:13.8px;font-weight:600;margin:0;letter-spacing:-.01em}
+.frow p{margin:0;font-size:13.2px;line-height:1.8;color:var(--dim)}
+.frow p strong{color:var(--text);font-weight:500}
+
+/* frames */
+.frame{position:relative;overflow:hidden;background:#05070A;border:1px solid var(--line);border-radius:4px}
+.frame img{width:100%;height:100%;object-fit:cover;display:block}
+.r1610{aspect-ratio:16/10}
+.r169{aspect-ratio:16/9}
+.band{aspect-ratio:2.5/1}
+.h300{height:300px}
+.h240{height:240px}
+.h200{height:200px}
+.cap{display:flex;justify-content:space-between;gap:14px;font-size:11.3px;color:var(--dim-2);margin-top:7px;line-height:1.6}
+.cap b{color:var(--dim);font-weight:500}
+.cap .r{font-family:var(--mono);white-space:nowrap}
+
+/* ordered color pipeline */
+.pipe{counter-reset:p;display:grid;margin:0;padding:0}
+.pipe li{list-style:none;counter-increment:p;display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;padding:10px 0;border-top:1px solid var(--line)}
+.pipe li:first-child{border-top:0;padding-top:0}
+.pipe li::before{content:counter(p,decimal-leading-zero);font-family:var(--mono);font-size:10.5px;color:var(--violet);padding-top:2px}
+.pipe b{display:block;font-size:13.2px;font-weight:600;letter-spacing:-.01em}
+.pipe span{display:block;font-size:12.5px;color:var(--dim);line-height:1.7;margin-top:2px}
+
+/* table */
+.tbl-wrap{border:1px solid var(--line);border-radius:4px;overflow:hidden;background:var(--panel)}
+.tbl{width:100%;border-collapse:collapse;font-size:12.8px}
+.tbl th{
+  text-align:left;font-family:var(--mono);font-size:10.5px;font-weight:500;color:var(--dim-2);
+  padding:9px 12px;background:var(--panel-2);border-bottom:1px solid var(--line);
+}
+.tbl td{padding:9px 12px;border-top:1px solid var(--line);vertical-align:top;line-height:1.62}
+.tbl tbody tr:first-child td{border-top:0}
+.tbl tbody tr:hover{background:rgba(255,255,255,.022)}
+.tbl .name{font-family:var(--mono);font-size:12.2px;color:var(--text);white-space:nowrap}
+.tbl .note{color:var(--dim);font-size:12.4px}
+.tbl .c{text-align:center;font-family:var(--mono);font-size:12.5px}
+.tbl .yes-d{color:var(--green)}
+.tbl .yes-e{color:var(--violet)}
+.tbl .no{color:#3B444E}
+.tbl code{font-family:var(--mono);font-size:11.8px;color:#C9C4BC;background:#0C1015;padding:1px 4px;border-radius:2px}
+.tbl a{color:#B79BFF}
+
+/* code */
+.code{border:1px solid var(--line);border-radius:4px;overflow:hidden;background:#080B0E}
+.code-top{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;height:31px;padding:0 12px;
+  background:var(--panel-2);border-bottom:1px solid var(--line);font-family:var(--mono);font-size:10.5px;color:var(--dim-2);
+}
+.code pre{margin:0;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:12.2px;line-height:1.92;color:#D6D2CB}
+.code .cm{color:#5E6A76}
+.code .s{color:#7FD6B4}
+.code .p{color:#8FA0B2}
+
+/* loudness meter */
+.meter-panel{border:1px solid var(--line);border-radius:4px;background:#0D1116;padding:13px 15px 11px}
+.meter-h{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;color:var(--dim-2);margin-bottom:10px}
+.meter-body{display:flex;gap:14px;align-items:flex-end;justify-content:space-between}
+.meter-row{display:flex;gap:14px}
+.meter-col{width:30px;text-align:center}
+.meter{display:flex;flex-direction:column-reverse;gap:2px;height:112px}
+.meter i{display:block;height:5px;border-radius:1px;background:#171E25}
+.meter i.on{background:var(--green)}
+.meter i.on.warn{background:var(--amber)}
+.meter i.on.peak{background:var(--magenta)}
+.meter-lab{font-family:var(--mono);font-size:10px;color:var(--dim);margin-top:5px}
+.meter-val{font-family:var(--mono);font-size:10.5px;color:var(--text)}
+.meter-scale{display:flex;flex-direction:column;justify-content:space-between;height:112px;padding-left:9px;border-left:1px solid var(--line);font-family:var(--mono);font-size:9px;color:var(--dim-2)}
+
+/* parity bars */
+.bars{display:grid;gap:16px}
+.bar-row .lab{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.bar-row .lab b{font-size:13.2px;font-weight:500}
+.bar-row .lab span{font-family:var(--mono);font-size:19px;letter-spacing:-.03em}
+.seg{display:flex;gap:2px;height:11px}
+.seg i{flex:1;background:#171E25;border-radius:1px}
+.seg i.on{background:var(--violet)}
+.seg.amber i.on{background:var(--amber)}
+
+/* download tabs */
+.tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);overflow-x:auto}
+.tabs input{position:absolute;opacity:0;pointer-events:none}
+.tabs label{font-size:12.5px;color:var(--dim);padding:8px 14px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-1px;transition:.15s}
+.tabs label:hover{color:var(--text)}
+.tabs input:checked + label{color:#B79BFF;border-color:var(--violet)}
+.tabs input:focus-visible + label{outline:2px solid var(--violet);outline-offset:-2px}
+.pane{display:none;padding-top:14px}
+.pane.on{display:block}
+
+/* app grid */
+.appgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.app{display:flex;gap:10px;align-items:center;padding:10px 12px;border:1px solid var(--line);border-radius:4px;background:var(--panel);transition:.18s}
+.app:hover{border-color:var(--line-2);background:var(--panel-2)}
+.app img{width:24px;height:24px;border-radius:5px;flex-shrink:0}
+.app b{display:block;font-family:var(--sans);font-size:12.4px;font-weight:600;letter-spacing:-.01em}
+.app span{display:block;font-size:10.8px;color:var(--dim-2);line-height:1.5}
+.app.here{border-color:rgba(139,92,246,.45);background:rgba(139,92,246,.07)}
+
+/* footer */
+.ft{border-top:1px solid var(--line);padding:40px 0 34px;background:#080A0C}
+.join{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;gap:32px;align-items:center;
+  padding:20px 22px;border:1px solid var(--line);border-radius:5px;
+  background:linear-gradient(110deg,rgba(139,92,246,.11),rgba(139,92,246,0) 58%),var(--panel);
+}
+.join h3{font-family:var(--sans);font-size:17px;font-weight:600;letter-spacing:-.02em;margin:0 0 5px}
+.join p{margin:0;font-size:12.4px;color:var(--dim);max-width:64ch;line-height:1.75}
+.join-cta{display:flex;gap:8px;flex-shrink:0}
+.ft-in{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:40px;align-items:start;margin-top:30px}
+.ft-links{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:20px}
+.ft-col h4{font-family:var(--mono);font-size:10.5px;font-weight:500;color:var(--dim-2);margin:0 0 8px}
+.ft-col a{display:block;font-size:12.3px;color:var(--dim);padding:2.5px 0;transition:.15s}
+.ft-col a:hover{color:var(--text)}
+.ft-bottom{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:28px;padding-top:16px;border-top:1px solid var(--line);font-size:11.2px;color:var(--dim-2)}
+
+@media (max-width:1180px){
+  .nav{display:none}
+  .hero-in{grid-template-columns:1fr;gap:34px}
+  .sec-head{grid-template-columns:1fr;gap:18px}
+  .spec{grid-template-columns:repeat(3,minmax(0,1fr));gap:0 18px;border-top:0;padding-top:0}
+  .spec-row{border-top:1px solid var(--line);border-bottom:0}
+  .appgrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width:820px){
+  .wrap{width:calc(100% - 36px)}
+  .hero{padding-top:88px}
+  .sec{padding:44px 0}
+  .s2,.s3,.s4,.s5,.s6,.s7,.s8{grid-column:span 12}
+  .frow{grid-template-columns:1fr;gap:5px}
+  .appgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .statusbar{grid-template-columns:repeat(2,minmax(0,1fr));row-gap:12px}
+  .statusbar div{border-left:0;padding-left:0}
+  .spec{grid-template-columns:1fr}
+  .spec-row{border-top:1px solid var(--line);border-bottom:0}
+  .spec-row:last-child{border-bottom:1px solid var(--line)}
+  .tl-scale span:nth-child(2),.tl-scale span:nth-child(4){display:none}
+  .tbl{font-size:11.8px}
+  .tbl td,.tbl th{padding:8px 8px}
+  .tbl .name{white-space:normal;word-break:break-word}
+  .join{grid-template-columns:1fr;gap:14px}
+  .ft-in{grid-template-columns:1fr}
+  .ft-links{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:560px){
+  .bench-meta{display:none}
+  .ws{overflow-x:auto;scrollbar-width:none}
+  .ws::-webkit-scrollbar{display:none}
+  .hero-facts{grid-template-columns:1fr}
+  .hero-facts > div:nth-child(2n){padding-left:0;border-left:0}
+  .meter-col{width:24px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}
+</style>
+</head>
+<body>
+
+<header class="hdr">
+  <div class="wrap hdr-in">
+    <a class="brand" href="#top"><img src="public/shots/app-icon.png" alt=""><b>FilmCraft</b><i>alpha</i></a>
+    <nav class="nav">
+      <a href="#editing">剪辑</a><a href="#color">调色</a><a href="#effects">特效</a>
+      <a href="#audio">音频</a><a href="#formats">格式</a><a href="#agents">智能体</a><a href="#docs">文档</a>
+    </nav>
+    <div class="hdr-right">
+      <a class="btn btn-ghost" href="https://github.com/storytold/filmcraft">GitHub</a>
+      <a class="btn btn-solid" href="#download">下载</a>
+    </div>
+  </div>
+  <div class="progress" id="prog"></div>
+</header>
+
+<main id="top">
+
+<section class="hero">
+  <div class="wrap">
+    <div class="hero-in">
+      <div>
+        <div class="eyebrow"><span class="dot"></span>开源 · 纯 Rust · MIT / Apache-2.0</div>
+        <h1>熟悉的时间轴，<span>全新的底层。</span></h1>
+        <p class="hero-sub">FilmCraft 是一款专业非线性视频编辑器：剪辑、调色与声音。原生支持 macOS、Windows 与 Linux，也能通过 WebAssembly 在浏览器里跑。</p>
+        <p class="hero-note">由 ArtCraft 团队出品。当前处于 alpha，功能广度约为专业 NLE 的 86%。</p>
+        <div class="cta-row">
+          <a class="btn btn-solid" href="#download">下载 FilmCraft</a>
+          <a class="btn btn-ghost" href="#start">快速上手</a>
+          <a class="btn btn-ghost" href="https://github.com/storytold/filmcraft">查看源码</a>
+        </div>
+        <div class="hero-facts">
+          <div><div class="v">650<small>+</small></div><div class="k">引擎命令</div></div>
+          <div><div class="v">254,016,000,000</div><div class="k">每秒 tick 数</div></div>
+          <div><div class="v">90<small>+</small> / 30</div><div class="k">特效 / 转场</div></div>
+          <div><div class="v">0</div><div class="k">FFmpeg 依赖</div></div>
+          <div><div class="v">10<small>种</small></div><div class="k">平台构建</div></div>
+          <div><div class="v">MIT<small>|</small>Apache</div><div class="k">双重许可</div></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="bench">
+          <div class="bench-top">
+            <div class="ws" role="tablist" aria-label="工作区">
+              <button role="tab" aria-selected="true" data-img="assembly.png">汇编</button>
+              <button role="tab" aria-selected="false" data-img="timeline.png">剪辑</button>
+              <button role="tab" aria-selected="false" data-img="hero.png">调色</button>
+              <button role="tab" aria-selected="false" data-img="effects.png">特效</button>
+              <button role="tab" aria-selected="false" data-img="export.png">导出</button>
+            </div>
+            <div class="bench-meta">1920×1080 · 23.976 fps · 48 kHz</div>
+          </div>
+          <div class="bench-screen">
+            <img id="benchShot" src="public/shots/assembly.png" alt="FilmCraft 的「汇编」工作区">
+            <div class="bench-tc">00:01:17:12</div>
+            <div class="bench-res">Full</div>
+          </div>
+          <div class="tl" aria-hidden="true">
+            <div class="tl-ruler">
+              <div class="tl-marks">
+                <i style="background:#8B5CF6"></i><i style="background:#4FD1A5"></i>
+                <i style="background:#E0A64A"></i><i style="background:#D9679B"></i><i style="background:#4C8DE0"></i>
+              </div>
+              <div class="tl-scale">
+                <span>00:00:00:00</span><span>00:00:20:00</span><span>00:00:40:00</span><span>00:01:00:00</span><span>00:01:17:12</span>
+              </div>
+            </div>
+            <div class="tl-row">
+              <div class="tl-tag">V2</div>
+              <div class="tl-lane"><div class="clip c-t" style="left:6%;width:19%"><span>LAUNCH 39A</span></div><div class="clip c-t" style="left:63%;width:14%"><span>TITLE</span></div></div>
+            </div>
+            <div class="tl-row">
+              <div class="tl-tag on">V1</div>
+              <div class="tl-lane">
+                <div class="clip c-v" style="left:0;width:17%"></div><div class="clip c-v" style="left:17.6%;width:15%"></div>
+                <div class="clip c-v" style="left:33.2%;width:12%"></div><div class="clip c-v" style="left:45.8%;width:21%"></div>
+                <div class="clip c-v" style="left:67.4%;width:32%"></div>
+              </div>
+            </div>
+            <div class="tl-row">
+              <div class="tl-tag">A2</div>
+              <div class="tl-lane tall"><div class="clip c-a" style="left:0;width:99.6%"><div class="wave" data-wave="7"></div></div></div>
+            </div>
+            <div class="tl-row">
+              <div class="tl-tag">A1</div>
+              <div class="tl-lane"><div class="clip c-a" style="left:12%;width:52%;opacity:.75"><div class="wave" data-wave="11"></div></div></div>
+            </div>
+            <div class="playhead" style="left:calc(30px + 6px + (100% - 36px) * .471)"></div>
+          </div>
+        </div>
+        <p class="bench-cap">「汇编」工作区，正在用《活死人之夜》（1968）与《魂魄出窍》（1962）的插入镜头剪一条预告片。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 剪辑 -->
+<section class="sec" id="editing">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>剪辑</h2>
+        <p class="sec-lead">熟悉的面板、工作区、工具与快捷键，让你的双手天然知道每样东西放在哪里。而在表层之下，它是从比特流开始全新打造的。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>时间基准</dt><dd>254,016,000,000 ticks/s</dd></div>
+        <div class="spec-row"><dt>修剪工具</dt><dd>6 种，含动态修剪</dd></div>
+        <div class="spec-row"><dt>撤销</dt><dd>无限 + 历史面板</dd></div>
+      </dl>
+    </div>
+
+    <div class="frow">
+      <h3>三点编辑</h3>
+      <p>在源监视器中标记入点与出点，然后插入（<kbd>,</kbd>）或覆盖（<kbd>.</kbd>）到已打补丁的轨道上。提升（<kbd>;</kbd>）与抽取（<kbd>'</kbd>）把选段取出。</p>
+    </div>
+    <div class="frow">
+      <h3>全类型修剪</h3>
+      <p>波纹、滚动、滑动、滑行、速率拉伸与剃刀工具。修剪模式把编辑点选为波纹、滚动或修剪，逐帧微调（<kbd>⌥←</kbd> <kbd>⌥→</kbd>，配合 <kbd>⇧</kbd> 可 ×5），用 <kbd>⌃T</kbd> 切换修剪类型，用 <kbd>E</kbd> 延伸到播放头。<kbd>Q</kbd> 与 <kbd>W</kbd> 做指向播放头的波纹修剪。<strong>修剪监视器</strong>显示编辑点两侧画面，而<strong>动态修剪</strong>在播放时实时修剪：<kbd>L</kbd> 前进、<kbd>J</kbd> 后退、<kbd>K</kbd> 停止并作为一步撤销提交。</p>
+    </div>
+    <div class="frow">
+      <h3>精确时间</h3>
+      <p>每一次编辑都基于整数 tick 计算：<strong>每秒 254,016,000,000 个 tick</strong>，可被所有常见帧率与采样率整除。23.976、29.97 丢帧与 59.94 都是精确值，而非近似值。</p>
+    </div>
+    <div class="frow">
+      <h3>专业人士依赖的细节</h3>
+      <p>带颜色、名称与持续时长的标记；用<strong>标记 ▸ 将标记导出为 CSV…</strong>导出序列审阅笔记；在一条或所有轨道上添加编辑（<kbd>⌘K</kbd>）；嵌套；复制、粘贴与粘贴插入；波纹删除与闭合间隙；吸附；带历史面板的无限撤销。</p>
+    </div>
+    <div class="frow">
+      <h3>你的按键</h3>
+      <p>键盘快捷键编辑器（<kbd>⌥⌘K</kbd>）带一张手绘键盘图、面板专属快捷键、冲突警告，以及 FilmCraft 与标准 NLE 键位预设。</p>
+    </div>
+    <div class="frow">
+      <h3>永不丢失工作</h3>
+      <p>保存是原子操作，自动保存保留一组滚动的版本历史，每次编辑约一秒后写入的崩溃恢复日志，能在崩溃或断电后找回未保存的改动。</p>
+    </div>
+
+    <div style="margin-top:24px">
+      <div class="frame band"><img src="public/shots/timeline.png" alt="时间轴特写"></div>
+      <div class="cap"><span>近距离：叠化、V2 上的插入镜头、A2 上的配乐、彩色标记，以及右侧的响度表。</span><span class="r">《活死人之夜》· 1968</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 调色 -->
+<section class="sec" id="color">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>调色</h2>
+        <p class="sec-lead">一套完整的调色面板，按调色师的工作顺序排列。所有调色都在线性光、32 位浮点下进行，示波器由已调色的帧计算得出。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>处理精度</dt><dd>32-bit float · 线性光</dd></div>
+        <div class="spec-row"><dt>内置风格</dt><dd>8 种 + 强度调节</dd></div>
+        <div class="spec-row"><dt>曲线</dt><dd>单调三次插值，无过冲</dd></div>
+      </dl>
+    </div>
+
+    <div class="tiles">
+      <div class="s6">
+        <div class="frame r1610"><img src="public/shots/color.png" alt="调色工作区"></div>
+        <div class="cap"><span>《谜中谜》（1963）的调色工作区，节目录监视器旁是实时示波器。</span><span class="r">Color workspace</span></div>
+      </div>
+      <div class="s6">
+        <ol class="pipe">
+          <li><div><b>基础校正</b><span>色温与色调、曝光、对比度、高光、阴影、白色、黑色、饱和度。</span></div></li>
+          <li><div><b>创意</b><span>八个内置风格带强度调节，外加褪色胶片、锐化与鲜活度。这些风格是用代码写的色彩变换，而非 LUT 文件。</span></div></li>
+          <li><div><b>曲线</b><span>RGB 曲线编辑器，采用单调三次插值（无过冲），以及色相 vs 饱和度、色相 vs 色相、色相 vs 亮度、亮度 vs 饱和度、饱和度 vs 饱和度。</span></div></li>
+          <li><div><b>色轮</b><span>阴影、中间调与高光三个色轮，各自带独立的亮度控制。</span></div></li>
+          <li><div><b>HSL 二级</b><span>按色相、饱和度与亮度抠出某个颜色，把抠像结果以蒙版形式查看，只校正你选中的部分。</span></div></li>
+          <li><div><b>暗角</b><span>强度、中点、圆度与羽化。</span></div></li>
+        </ol>
+      </div>
+
+      <div class="s4">
+        <div class="frame" style="height:340px"><img src="public/shots/scopes.png" alt="波形与矢量示波器" style="object-position:center 34%"></div>
+        <div class="cap"><span><b>如实呈现的示波器。</b>波形与矢量示波器都由已调色的帧计算得出。</span></div>
+      </div>
+      <div class="s8">
+        <div class="tile" style="height:340px">
+          <div class="proll">
+            <div>
+              <h3>在线性光、32 位浮点下调色</h3>
+              <p>基础校正、风格、曲线、色轮与暗角层层叠加时不会互相污染，示波器读数从已调色的帧反算，而不是从原始信号估算。</p>
+            </div>
+            <div>
+              <h3>每个分区各自带开关</h3>
+              <p>调色面板按调色师的工作顺序排列：基础校正、创意、曲线、色轮与匹配、HSL 二级、暗角。任何一段都可以单独关掉比对。</p>
+            </div>
+            <div>
+              <h3>HSL 二级当蒙版看</h3>
+              <p>按色相、饱和度与亮度抠出某个颜色，把抠像结果以蒙版形式查看，只校正你选中的那一部分画面。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 特效 -->
+<section class="sec" id="effects">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>特效与动效</h2>
+        <p class="sec-lead">16 个分类、90 多种特效，约 30 种转场。效果控制面板在每个参数下方显示关键帧轨道，每个被动画化的参数都能展开成数值与速度曲线。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>特效库</dt><dd>16 分类 / 90+</dd></div>
+        <div class="spec-row"><dt>转场</dt><dd>约 30 种</dd></div>
+        <div class="spec-row"><dt>混合模式</dt><dd>26 种</dd></div>
+      </dl>
+    </div>
+
+    <div class="tiles">
+      <div class="tile s4">
+        <div class="num">90<span style="font-size:15px;color:var(--dim)">+</span></div>
+        <div class="unit">视频特效，横跨 16 个分类</div>
+      </div>
+      <div class="tile s4">
+        <div class="num">30</div>
+        <div class="unit">转场：交叉叠化、渐黑/渐白、胶片叠化、擦除、光圈、推移、滑动、缩放、翻页、立方体翻转</div>
+      </div>
+      <div class="tile s4">
+        <div class="num">26</div>
+        <div class="unit">混合模式，每个剪辑都带运动与不透明度</div>
+      </div>
+
+      <div class="tile s7">
+        <h3>一套全面的视频特效库</h3>
+        <p>传统特效，以及约 30 种转场。每个剪辑都带运动与不透明度：位置、缩放、旋转、锚点与防闪烁。</p>
+        <div class="taglist">
+          <b>模糊</b><b>散景</b><b>对焦</b><b>复合</b><b>抠像</b><b>Ultra Key</b><b>轨道遮罩</b><b>四角定位</b><b>湍流置换</b><b>防抖稳定</b><b>灯光与辉光</b><b>沉浸式视频 VR</b><b>时间海报化</b><b>回声</b>
+        </div>
+      </div>
+      <div class="tile s5">
+        <h3>进阶关键帧</h3>
+        <p>线性、贝塞尔、自动与连续贝塞尔、定格、缓入与缓出。效果控制面板在每个参数下方显示一条关键帧轨道，位于带播放头手柄的时间标尺之下；每个被动画化的参数都能展开成<strong style="color:var(--text);font-weight:500">数值与速度曲线</strong>，并带有可拖拽的影响手柄。</p>
+        <p>效果控制面板与属性面板共享同一个关键帧导航器 ◀ ◆ ▶：在播放头处添加或删除关键帧，前进到上一帧或下一帧。</p>
+      </div>
+
+      <div class="s7">
+        <div class="frame h240"><img src="public/shots/keyframes.png" alt="数值与速度曲线"></div>
+        <div class="cap"><span>标题卡上的一次缓动推入：数值曲线、速度曲线与贝塞尔影响手柄。</span><span class="r">Keyframe editor</span></div>
+      </div>
+      <div class="s5" style="display:flex;flex-direction:column;justify-content:space-between">
+        <div class="tile" style="flex:1">
+          <h3>GPU 合成器</h3>
+          <p>基于 wgpu（Metal、Vulkan、DirectX 12、WebGPU）构建。它直接从解码器中以 YUV 采样，采用足迹超采样，并在线性光中混合。一条 CPU 渲染路径会渲染相同的帧，两者互为对照测试。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 音频 -->
+<section class="sec" id="audio">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>音频</h2>
+        <p class="sec-lead">符合广播标准的响度表，自研 DSP 库上的剪辑效果，以及像调音台一样的自动化。声卡作主时钟，画面跟随声音。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>响度标准</dt><dd>ITU-R BS.1770 / EBU R128</dd></div>
+        <div class="spec-row"><dt>混音性能</dt><dd>24 轨 × 3 效果 ≈ 6× 实时</dd></div>
+        <div class="spec-row"><dt>整体读数</dt><dd>与 ffmpeg ebur128 差 ≤ 0.1 LU</dd></div>
+      </dl>
+    </div>
+
+    <div class="tiles">
+      <div class="tile s4" style="min-height:210px">
+        <div class="meter-panel" style="border:0;background:none;padding:0">
+          <div class="meter-h"><span>LUFS</span><span>整体 -21.4</span></div>
+          <div class="meter-body">
+            <div class="meter-row">
+              <div class="meter-col"><div class="meter" data-meter="12"></div><div class="meter-lab">M</div><div class="meter-val">-14.2</div></div>
+              <div class="meter-col"><div class="meter" data-meter="10"></div><div class="meter-lab">S</div><div class="meter-val">-18.6</div></div>
+              <div class="meter-col"><div class="meter" data-meter="8"></div><div class="meter-lab">I</div><div class="meter-val">-21.4</div></div>
+              <div class="meter-col"><div class="meter" data-meter="17"></div><div class="meter-lab">TP</div><div class="meter-val">-1.2</div></div>
+            </div>
+            <div class="meter-scale"><span>0</span><span>-6</span><span>-12</span><span>-18</span><span>-24</span><span>-30</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="tile s8">
+        <h3>响度表与 DSP</h3>
+        <p>瞬时、短期与整体响度及真峰，与峰值表并列。剪辑效果包括参数均衡、高通、低通与带通滤波器、动态处理、真峰限制器、延迟、混响、降噪、去嗡声、反相与变调。参数可打关键帧，效果在擦洗、播放与导出之间保持连续，并做延迟补偿。</p>
+        <h3 style="margin-top:12px">两个混音器</h3>
+        <p>音频轨道混音器与音频剪辑混音器：推子、声相、静音、独奏，每条轨道五个插入槽（推子前或推子后）、发送、子混音与混音轨，全部采样精确并做延迟补偿。</p>
+      </div>
+
+      <div class="tile s6">
+        <h3>像调音台一样的自动化</h3>
+        <p>读取、闩锁、触控与写入模式，在播放时从混音器实时录制，并以轨道关键帧的形式在时间轴上显示与编辑。外加音频增益对话框（设定、调整、归一化）与等功率交叉淡化。</p>
+      </div>
+      <div class="tile s6">
+        <h3>音频时钟播放</h3>
+        <p>声卡作主时钟，画面跟随声音，而非相反。参数均衡器、真峰限制器与混响都在自研 DSP 库上运行，延迟补偿贯穿擦洗、播放与导出。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 字幕 -->
+<section class="sec" id="captions">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>字幕与唱词</h2>
+        <p class="sec-lead">真正的文字引擎，节目录监视器上的文字、形状与钢笔工具，以及帧精确的唱词轨。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>文字</dt><dd>OpenType 塑形 · 双向文本</dd></div>
+        <div class="spec-row"><dt>唱词轨</dt><dd>Subtitle / CEA-608 / 708</dd></div>
+        <div class="spec-row"><dt>交换</dt><dd>SRT · WebVTT · SCC</dd></div>
+      </dl>
+    </div>
+    <div class="tiles">
+      <div class="tile s4"><h3>文字引擎</h3><p>OpenType 塑形，支持字距与连字、双向文本、换行、字距调整与行距，在线性光中绘制，任意缩放或旋转都保持清晰。</p></div>
+      <div class="tile s4"><h3>图形与形状</h3><p>点击即输入，用光标与选区编辑，拖出矩形、椭圆与路径。图形剪辑容纳文字与形状图层，带填充、描边、背景与阴影，全部可打关键帧，并在属性面板中编辑。</p></div>
+      <div class="tile s4"><h3>唱词</h3><p>唱词轨支持 Subtitle、CEA-608、CEA-708 与图文电视（Teletext）格式；以帧精确的时间导入导出 SRT、WebVTT 与 SCC；在文字面板中编辑唱词，并将其烧录进导出文件。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 格式 -->
+<section class="sec" id="formats">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>格式与编解码器</h2>
+        <p class="sec-lead">内部没有 FFmpeg。视频编解码器、AAC、Opus 与容器都是我们自己的 Rust 代码，依据公开的 ITU-T、ISO 与 IETF 规范实现，并逐帧对照 ffmpeg 作为外部对照基准进行测试。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>自研实现</dt><dd>H.264 · HEVC · ProRes · AAC · Opus</dd></div>
+        <div class="spec-row"><dt>解码速度</dt><dd>1080p 下 500–600 fps</dd></div>
+        <div class="spec-row"><dt>容器</dt><dd>MP4 · MOV · MKV · WebM · AVI</dd></div>
+      </dl>
+    </div>
+
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th style="width:21%">编解码器 / 容器</th><th style="width:6%;text-align:center">解码</th><th style="width:6%;text-align:center">编码</th><th>备注</th></tr></thead>
+        <tbody>
+          <tr><td class="name">H.264 / AVC</td><td class="c yes-d">✓</td><td class="c yes-e">✓</td><td class="note">解码器在 37+ 条码流上逐位精确，1080p 下 500–600 fps。编码器：High、Main 与 Baseline 档，CABAC、B 帧、CRF/CBR/VBR/2-pass</td></tr>
+          <tr><td class="name">HEVC / H.265</td><td class="c yes-d">✓</td><td class="c no">—</td><td class="note">Main 与 Main 10，在 41 条码流上逐位精确（tile、WPP、PCM、长期参考），1080p 下约 225 fps</td></tr>
+          <tr><td class="name">Apple ProRes</td><td class="c yes-d">✓</td><td class="c yes-e">✓</td><td class="note">解码 422 Proxy 至 4444 XQ；导出写入 422 HQ</td></tr>
+          <tr><td class="name">AAC-LC</td><td class="c yes-d">✓</td><td class="c yes-e">✓</td><td class="note"></td></tr>
+          <tr><td class="name">VP8</td><td class="c yes-d">✓</td><td class="c no">—</td><td class="note">全部编码工具，码流版本 0–3，隐藏的 altref 帧，透明 WebM 的 alpha 层；在已发布的 VP8 测试向量上与 libvpx 逐位精确；封装于 WebM/Matroska 与 MP4</td></tr>
+          <tr><td class="name">VP9</td><td class="c yes-d">✓</td><td class="c no">—</td><td class="note">档位 0–3，8/10/12-bit，4:2:0 至 4:4:4，tile 与超级帧；在 50+ 条码流上逐位精确；封装于 WebM/Matroska 与 MP4</td></tr>
+          <tr><td class="name">Opus</td><td class="c yes-d">✓</td><td class="c no">—</td><td class="note">SILK、CELT、混合与多流环绕；在每一个 RFC 8251 一致性向量上范围精确；封装于 WebM/Matroska 与 MP4</td></tr>
+          <tr><td class="name">AV1</td><td class="c yes-d">✓</td><td class="c no">—</td><td class="note">Main 档，8/10-bit 4:2:0 与单色，含胶片颗粒、超分辨率与空间层在内的全部编码工具；在测试所用的 libaom 向量上与 libdav1d 逐位精确；封装于 MP4 与 WebM/Matroska</td></tr>
+          <tr><td class="name">DNxHD / DNxHR</td><td class="c yes-d">✓</td><td class="c yes-e">✓</td><td class="note">全部 SMPTE ST 2019-1 CID（LB 至 444，8/10/12-bit）；导出在 MOV 中写入 DNxHR</td></tr>
+          <tr><td class="name">MJPEG、PCM</td><td class="c yes-d">✓</td><td class="c yes-e">✓</td><td class="note"></td></tr>
+          <tr><td class="name">MP3、FLAC、ALAC、Vorbis</td><td class="c yes-d">✓</td><td class="c no">—</td><td class="note">目前通过 <a href="https://github.com/pdeljanov/Symphonia">symphonia</a> crate（MPL-2.0）实现，后续将替换为自研</td></tr>
+          <tr><td class="name">MP4 / MOV</td><td class="c yes-d">✓</td><td class="c yes-e">✓</td><td class="note">分片 MP4、编辑列表、时码轨</td></tr>
+          <tr><td class="name">Matroska / WebM</td><td class="c yes-d">✓</td><td class="c no">—</td><td class="note">缝合、Cues、头部剥离、HDR 色彩元数据</td></tr>
+          <tr><td class="name">AVI</td><td class="c yes-d">✓</td><td class="c no">—</td><td class="note">AVI 1.0 与 OpenDML（大于 1 GB 的文件）；Motion JPEG、H.264、HEVC 与未压缩的 RGB / YUV，搭配 PCM、MP3、MP2 或 AC-3。暂不支持 DivX / Xvid 与 DV</td></tr>
+          <tr><td class="name">静帧</td><td class="c yes-d">✓</td><td class="c yes-e">✓</td><td class="note">导入 PNG、JPEG、GIF、WebP、TIFF 与 BMP（动态 GIF、APNG 与 WebP 作为带透明度的剪辑）；导出 PNG 序列与动态 GIF</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="tiles" style="margin-top:8px">
+      <div class="tile s6"><h3>还能导入</h3><p>MPEG-2 / MPEG-1 视频、AC-3、MP2、MXF（OP1a / OP-Atom）、MPEG 传输流与节目流（AVCHD、广播、DVD）、Ogg 与图像序列。</p></div>
+      <div class="tile s6"><h3>硬件解码与编码</h3><p>硬件解码在 macOS（VideoToolbox）、Windows（Media Foundation）上可用，对于 H.264 与 HEVC 在 Linux（VA-API）上也可用；H.264 导出在 Windows 与 Linux 上可使用 NVIDIA 编码器（需开启），H.265（HEVC Main，8-bit）导出也通过它实现（Windows 用 NVENC，macOS 用 VideoToolbox）。</p></div>
+    </div>
+    <p style="font-size:12.2px;color:var(--dim-2);margin:9px 0 0">暂不支持：AV1 导出、相机 RAW、E-AC-3。</p>
+  </div>
+</section>
+
+<!-- 导出 -->
+<section class="sec" id="export">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>导出</h2>
+        <p class="sec-lead">使用自研编码器的 H.264 MP4 与 AAC。一段 6 秒、960×540 的渲染耗时 1.3 秒，在 ffmpeg 中解码不产生任何警告，且开启了严格错误检测。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>软件导出</dt><dd>H.264 / AAC MP4</dd></div>
+        <div class="spec-row"><dt>渲染</dt><dd>6 s @ 960×540 → 1.3 s</dd></div>
+        <div class="spec-row"><dt>后台任务</dt><dd>带进度与取消</dd></div>
+      </dl>
+    </div>
+    <div class="tiles">
+      <div class="s7">
+        <div class="frame band"><img src="public/shots/export.png" alt="导出模式" style="object-position:center 46%"></div>
+        <div class="cap"><span>导出模式，已设为把预告片写成 H.264 MP4。</span><span class="r">Media File → H.264</span></div>
+      </div>
+      <div class="s5">
+        <div class="tile" style="height:100%">
+          <div class="proll">
+            <div><h3>还支持</h3><p>QuickTime 中的 Apple ProRes 422 HQ 与 Motion JPEG、MXF OP1a 与标准 OP-Atom（DNxHR、ProRes 或 H.264 搭配 PCM 与起始时码）、PNG 序列、动态 GIF 与 WAV。</p></div>
+            <div><h3>后台任务</h3><p>带进度与取消，让你在渲染的同时继续剪辑。</p></div>
+            <div><h3>渲染预览</h3><p>渲染条把区段标记为绿、黄或红；渲染预览按内容缓存，因此一次编辑只会让受影响的部分失效，而撤销能把绿色找回来。</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 互通 -->
+<section class="sec" id="interchange">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>互通</h2>
+        <p class="sec-lead">在 FilmCraft 与任何其它编辑器之间交换时间轴。导入会把文档里的素材箱、媒体与序列作为一个可撤销的步骤合并进你的项目，并把它在磁盘上找到的每个媒体文件链接起来。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>时间轴交换</dt><dd>6 种格式</dd></div>
+        <div class="spec-row"><dt>导入行为</dt><dd>单步可撤销</dd></div>
+      </dl>
+    </div>
+    <div class="tiles">
+      <div class="tile s4"><h3>FCP 7 XML（xmeml）</h3><p>业界标准的时间轴交换格式。它承载嵌套序列、转场、生成器、运动、不透明度、时间重映射与带关键帧的音频电平。</p></div>
+      <div class="tile s4"><h3>FCPXML 1.9–1.11</h3><p>脊柱结构，连接剪辑作为轨道，含转场、重定时与复合剪辑。</p></div>
+      <div class="tile s4"><h3>OpenTimelineIO</h3><p>影视行业的开放交换格式，通过 <span class="mono" style="font-size:11.5px">metadata.filmcraft</span> 往返保留每一个 FilmCraft 细节。</p></div>
+      <div class="tile s4"><h3>CMX 3600 EDL</h3><p>仍在使用的最古老格式，带丢帧时码、叠化、擦除、速度变化（<span class="mono" style="font-size:11.5px">M2</span>），每条轨道一个 EDL。</p></div>
+      <div class="tile s4"><h3>AAF（Edit Protocol）</h3><p>标准的时间轴与音频交换格式。视频与音频轨道、叠化与渐变、带关键帧的剪辑音量、标记与源时码；音频以内嵌或独立 WAV / AIFF 文件形式存在，带手柄修剪，剪辑效果已渲染进去并拆为单声道，外加可选的视频混音。导入会读回 AAF，提取内嵌的音频。</p></div>
+      <div class="tile s4"><h3>OMF 2.0</h3><p>音频后期交接：带交叉淡化与增益、采样精确的音频轨道，音频封装在内或并列存放。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 智能体 -->
+<section class="sec" id="agents">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>为智能体而生</h2>
+        <p class="sec-lead">每一个菜单项、按钮、滑块与拖拽动作，都是一个带 id、类型化参数与启用状态的命令。UI、CLI、JSON 控制通道与一个 MCP 服务器都派发相同的命令。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>引擎命令</dt><dd>650+ 且持续增加</dd></div>
+        <div class="spec-row"><dt>控制通道</dt><dd>TCP 上的 JSON 行</dd></div>
+        <div class="spec-row"><dt>MCP</dt><dd>无界面服务器</dd></div>
+      </dl>
+    </div>
+    <div class="tiles">
+      <div class="s7">
+        <div class="code">
+          <div class="code-top"><span>control · jsonl</span><span>engine.execute</span></div>
+<pre><span class="p">{"method":</span> <span class="s">"engine.execute"</span><span class="p">,</span> <span class="p">"params":</span> {<span class="s">"command"</span><span class="p">:</span> <span class="s">"timeline.place"</span><span class="p">,</span>
+  <span class="p">"params":</span> {<span class="s">"item"</span><span class="p">:</span> 1<span class="p">,</span> <span class="s">"track"</span><span class="p">:</span> <span class="s">"V1"</span><span class="p">,</span> <span class="s">"seconds"</span><span class="p">:</span> 0<span class="p">,</span>
+    <span class="s">"sourceIn"</span><span class="p">:</span> 284298240000000<span class="p">,</span> <span class="s">"duration"</span><span class="p">:</span> 1270080000000}}}<span class="cm">
+
+// 通过控制通道（TCP 上的 JSON 行）或作为 MCP 工具调用来发送</span>
+<span class="p">{"method":</span> <span class="s">"engine.execute"</span><span class="p">,</span> <span class="p">"params":</span> {<span class="s">"command"</span><span class="p">:</span> <span class="s">"effects.setParam"</span><span class="p">,</span>
+  <span class="p">"params":</span> {<span class="s">"clip"</span><span class="p">:</span> 87<span class="p">,</span> <span class="s">"effect"</span><span class="p">:</span> <span class="s">"lumetri"</span><span class="p">,</span> <span class="s">"param"</span><span class="p">:</span> <span class="s">"curve_luma"</span><span class="p">,</span>
+    <span class="s">"value"</span><span class="p">:</span> [[0,0],[0.25,0.21],[0.75,0.82],[1,1]]}}}<span class="cm">
+
+// 三条命令：放置剪辑、改调色曲线、截一帧</span>
+
+<span class="p">{</span><span class="s">"method"</span><span class="p">:</span> <span class="s">"ui.screenshot"</span><span class="p">,</span> <span class="s">"params"</span><span class="p">:</span> {<span class="s">"path"</span><span class="p">:</span> <span class="s">"frame.png"</span>}}</pre>
+        </div>
+      </div>
+      <div class="s5">
+        <div class="tile" style="height:100%">
+          <div class="proll">
+            <div><h3>UI 也能被驱动</h3><p>每个小部件都有 automation id，智能体可以点击、拖拽、输入并截屏。这些截图里的预告片与调色，正是一位智能体驱动运行中的程序、以完全相同的方式完成的。</p></div>
+            <div><h3>同一套命令</h3><p>UI、CLI、JSON 控制通道与 MCP 服务器派发相同的命令，因此 Claude 或任何智能体都能像人一样精准地剪辑、修剪、调色、混音与导出。</p></div>
+            <div><h3>无界面也能跑</h3><p><span class="mono" style="font-size:11.5px">filmcraft-cli mcp</span> 启动 MCP 服务器；<span class="mono" style="font-size:11.5px">filmcraft-cli commands</span> 列出每一个引擎命令。</p></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 无处不在 -->
+<section class="sec" id="everywhere">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>无处不在</h2>
+        <p class="sec-lead">同一个引擎，桌面原生、浏览器 WebAssembly，以及一层可替换的界面。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>原生</dt><dd>macOS · Windows · Linux</dd></div>
+        <div class="spec-row"><dt>网页端</dt><dd>WebAssembly</dd></div>
+      </dl>
+    </div>
+    <div class="tiles">
+      <div class="tile s4"><h3>原生</h3><p>支持 macOS、Windows 与 Linux，并带有原生 macOS 菜单栏。</p></div>
+      <div class="tile s4"><h3>网页端</h3><p>相同的引擎与 UI 通过 WebAssembly 在浏览器中运行（<span class="mono" style="font-size:11.5px">apps/filmcraft-web</span>）；每个发布版本都会把它打包为 <span class="mono" style="font-size:11.5px">filmcraft-web-&lt;version&gt;.zip</span>。</p></div>
+      <div class="tile s4"><h3>可替换的 UI</h3><p>界面是引擎之上的一层 crate（<span class="mono" style="font-size:11.5px">ui-egui</span>），因此不同的前端可以在不触碰编辑逻辑的情况下替换它。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 快速上手 -->
+<section class="sec" id="start">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>快速上手</h2>
+        <p class="sec-lead">从源码构建。需要 Rust 工具链；界面与字幕里使用的日语文字来自 craft-fonts，它是一个可选的构建输入（发布构建始终包含它）。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>桌面包</dt><dd>-p filmcraft</dd></div>
+        <div class="spec-row"><dt>CLI</dt><dd>-p filmcraft-cli</dd></div>
+        <div class="spec-row"><dt>字体内嵌</dt><dd>CRAFT_FONTS_DIR</dd></div>
+      </dl>
+    </div>
+    <div class="tiles">
+      <div class="s7">
+        <div class="code">
+          <div class="code-top"><span>sh · 从源码运行</span><span>cargo</span></div>
+<pre><span class="cm"># 桌面应用，附带一个演示项目</span>
+cargo run --release -p filmcraft
+
+<span class="cm"># 再加上 JSON 行控制服务器</span>
+cargo run --release -p filmcraft -- --control 9876
+
+<span class="cm"># 列出每一个引擎命令</span>
+cargo run --release -p filmcraft-cli -- commands
+
+<span class="cm"># MCP 服务器（无界面）</span>
+cargo run --release -p filmcraft-cli -- mcp</pre>
+        </div>
+      </div>
+      <div class="s5" style="display:flex;flex-direction:column;gap:8px">
+        <div class="code">
+          <div class="code-top"><span>sh · 可选字体</span><span>OFL-1.1</span></div>
+<pre style="font-size:11.4px">git clone https://github.com/storytold/craft-fonts \
+  ../craft-fonts
+CRAFT_FONTS_DIR="$PWD/../craft-fonts" \
+  cargo run --release -p filmcraft</pre>
+        </div>
+        <div class="tile"><h3>遇到问题？</h3><p>控制协议记录在 <span class="mono" style="font-size:11.5px">docs/control-protocol.md</span>。想展示你的作品，来 <a href="https://discord.gg/artcraft" style="color:#B79BFF">Discord</a> 告诉我们。</p></div>
+        <p style="font-size:11.8px;color:var(--dim-2);margin:2px 0 0;line-height:1.7">没有 craft-fonts 时，FilmCraft 使用自身字体与系统字体；发布构建始终包含它。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 状态 -->
+<section class="sec" id="status">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>状态</h2>
+        <p class="sec-lead">FilmCraft 年轻且快速演进。剪辑、修剪、多机位、调色、关键帧、特效、字幕、唱词、混音、编解码器与导出，今天都已可用。它目前处于 alpha 阶段。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>对等度测量</dt><dd>2026-10-10</dd></div>
+        <div class="spec-row"><dt>许可</dt><dd>MIT | Apache-2.0</dd></div>
+      </dl>
+    </div>
+
+    <div class="tiles">
+      <div class="tile s7">
+        <div class="bars">
+          <div class="bar-row">
+            <div class="lab"><b>功能广度</b><span style="color:var(--violet)">86%</span></div>
+            <div class="seg" data-seg="86"></div>
+            <p style="font-size:11.8px;color:var(--dim-2);margin:7px 0 0">专业 NLE 中已存在的菜单项、特效、转场、面板与格式（菜单项 92%、特效 100%）。</p>
+          </div>
+          <div class="bar-row">
+            <div class="lab"><b>可用于真实工作</b><span style="color:var(--amber)">56%</span></div>
+            <div class="seg amber" data-seg="56"></div>
+            <p style="font-size:11.8px;color:var(--dim-2);margin:7px 0 0">诚实估计：距离能处理真实项目的完整制作工作还有多远。</p>
+          </div>
+        </div>
+      </div>
+      <div class="tile s5">
+        <h3>目前最大的差距</h3>
+        <p><strong style="color:var(--text);font-weight:500">大素材上的速度。</strong>混合模式与常见特效在 GPU 上，但调色、抠像与导出渲染仍在 CPU。H.264 编码可在 macOS 上、以及 Windows 与 Linux 配合 NVIDIA GPU 时使用硬件编码器。</p>
+        <p><strong style="color:var(--text);font-weight:500">原生 .prproj 导入。</strong>尚无法打开；请用 FCP7 XML、AAF 或 OTIO 带过来。</p>
+        <p><strong style="color:var(--text);font-weight:500">无插件。</strong>不托管 VST3 / Audio Units 或 OpenFX。</p>
+      </div>
+      <div class="tile s4"><h3>交付编解码器</h3><p>H.264 是唯一用软件导出的交付编解码器；H.265 只能通过硬件编码器导出（Windows 上 NVIDIA：Main 8-bit SDR 与 Main 10 HDR PQ / HLG；macOS 上 VideoToolbox：8-bit Main，SDR）；暂无 AV1 导出。</p></div>
+      <div class="tile s4"><h3>真实素材与平台</h3><p>解码器在一致性码流上逐位精确，但现实中的相机与手机文件测试较少。Windows 与 Linux 得到的测试远少于 macOS。</p></div>
+      <div class="tile s4"><h3>AI 功能</h3><p>目前很少；语音转文字为可选，且默认关闭。带真实素材的 bug 报告是你最能帮到我们的东西。</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- 架构 -->
+<section class="sec" id="architecture">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>架构</h2>
+        <p class="sec-lead">一个分层的 Cargo 工作区。前端以下的部分都不依赖任何 UI 工具包或操作系统 API。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>CI</dt><dd>cargo xtask ci</dd></div>
+      </dl>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th style="width:19%">层</th><th>Crate</th></tr></thead>
+        <tbody>
+          <tr><td>编解码器与容器</td><td class="name" style="white-space:normal">h264 · h264enc · hevc · vp9 · prores · aac · opus · isobmff · matroska · avi · bitstream</td></tr>
+          <tr><td>基础库</td><td class="name" style="white-space:normal">time · geom · color · frame · media · text · project · audio-dsp</td></tr>
+          <tr><td>编辑与互通</td><td class="name" style="white-space:normal">edit · codecs · captions · format · interchange</td></tr>
+          <tr><td>渲染与输出</td><td class="name" style="white-space:normal">render · gpu · export</td></tr>
+          <tr><td>引擎</td><td class="name" style="white-space:normal">engine — 命令注册表、会话、撤销、任务</td></tr>
+          <tr><td>前端</td><td class="name" style="white-space:normal">ui-egui · automation (MCP) · apps/filmcraft · apps/filmcraft-cli</td></tr>
+          <tr><td>测试支持</td><td class="name" style="white-space:normal">testkit（ffmpeg 对照基准、测试素材）· golden（黄金图像测试）</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:12px;color:var(--dim-2);margin:9px 0 0"><span class="mono" style="color:var(--dim)">cargo xtask ci</span> 会检查格式化、lint、测试、分层规则、资源署名与 wasm 构建。</p>
+  </div>
+</section>
+
+<!-- 下载 -->
+<section class="sec" id="download">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>下载</h2>
+        <p class="sec-lead">刚开始用 FilmCraft？从 getartcraft.com 上的 FilmCraft 页面下载，那是最简单的安装方式。想要某个特定构建或格式，在 GitHub 上取最新发布。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>最新发布</dt><dd>releases/latest</dd></div>
+        <div class="spec-row"><dt>校验和</dt><dd>SHA256SUMS.txt</dd></div>
+      </dl>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <input type="radio" name="os" id="os-win" checked><label for="os-win">Windows</label>
+      <input type="radio" name="os" id="os-mac"><label for="os-mac">macOS</label>
+      <input type="radio" name="os" id="os-linux"><label for="os-linux">Linux</label>
+      <input type="radio" name="os" id="os-bsd"><label for="os-bsd">FreeBSD</label>
+      <input type="radio" name="os" id="os-web"><label for="os-web">网页端</label>
+    </div>
+
+    <div class="pane on" id="pane-win">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th style="width:24%">构建</th><th>安装程序</th><th>便携版</th></tr></thead>
+          <tbody>
+            <tr><td>x64（64 位 Intel/AMD）</td><td class="name">filmcraft-&lt;ver&gt;-windows-x64.msi</td><td class="name">filmcraft-&lt;ver&gt;-windows-x64-portable.zip</td></tr>
+            <tr><td>arm64（骁龙及其它 ARM PC）</td><td class="name">filmcraft-&lt;ver&gt;-windows-arm64.msi</td><td class="name">filmcraft-&lt;ver&gt;-windows-arm64-portable.zip</td></tr>
+            <tr><td>x86（32 位）</td><td class="name">filmcraft-&lt;ver&gt;-windows-x86.msi</td><td class="name">filmcraft-&lt;ver&gt;-windows-x86-portable.zip</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p style="font-size:12px;color:var(--dim-2);margin:9px 0 0">安装程序与可执行文件均经过代码签名。</p>
+      <details style="margin-top:12px;border:1px solid var(--line);border-radius:4px;background:var(--panel);padding:11px 14px">
+        <summary style="cursor:pointer;font-size:12.8px;color:var(--text)">如果应用在 Windows 上打不开</summary>
+        <div style="font-size:12.4px;color:var(--dim);line-height:1.8;margin-top:9px">
+          <p style="margin:0">桌面应用默认只初始化 Vulkan 与 DirectX 12，而非 OpenGL。让 wgpu 同时创建一个 OpenGL 实例，可能在窗口出现前就让某些显卡驱动（AMD 的 <span class="mono">atio6axx.dll</span>）崩溃，于是应用会在任务管理器里一闪而过然后退出。<span class="mono">WGPU_BACKEND</span> 可覆盖默认设置用于排障（例如 <span class="mono">dx12</span> 或 <span class="mono">vulkan</span>）。在 PowerShell 中，于包含可执行文件的目录下：</p>
+          <div class="code" style="margin-top:9px">
+            <div class="code-top"><span>powershell</span><span>troubleshooting</span></div>
+<pre>$env:WGPU_BACKEND = "vulkan"
+&amp; .\filmcraft.exe
+Remove-Item Env:WGPU_BACKEND   <span class="cm"># 恢复默认设置</span></pre>
+          </div>
+          <p style="margin:9px 0 0">显式指定 <span class="mono">gl</span> 会在受影响的系统上让驱动崩溃重现。一台装有同一厂商不同驱动包的 GPU 的 PC（例如带有集成与独立两块 AMD GPU 的笔记本），可能把同一块 GPU 列出两次，各自经由安装的某个 Vulkan 驱动版本；FilmCraft 会使用较新的那块绘制，并在 <span class="mono">%APPDATA%\FilmCraft\Logs\filmcraft.log</span> 中说明。macOS、Linux 与网页端的后端默认值保持不变。</p>
+        </div>
+      </details>
+    </div>
+
+    <div class="pane" id="pane-mac">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th style="width:32%">构建</th><th>文件</th><th style="width:22%">备注</th></tr></thead>
+          <tbody>
+            <tr><td>应用，通用版（Apple 芯片 + Intel）</td><td class="name">filmcraft-&lt;ver&gt;-macos-universal.dmg</td><td class="note">已签名并公证</td></tr>
+            <tr><td>命令行工具，通用版</td><td class="name">filmcraft-cli-&lt;ver&gt;-macos-universal.zip</td><td class="note">已签名并公证</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="pane" id="pane-linux">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th style="width:19%">格式</th><th>x86_64</th><th>aarch64（ARM64）</th></tr></thead>
+          <tbody>
+            <tr><td>AppImage</td><td class="name">filmcraft-&lt;ver&gt;-linux-x86_64.AppImage</td><td class="name">filmcraft-&lt;ver&gt;-linux-aarch64.AppImage</td></tr>
+            <tr><td>Flatpak</td><td class="name">filmcraft-&lt;ver&gt;-linux-x86_64.flatpak</td><td class="name">filmcraft-&lt;ver&gt;-linux-aarch64.flatpak</td></tr>
+            <tr><td>Debian / Ubuntu</td><td class="name">filmcraft-&lt;ver&gt;-linux-x86_64.deb</td><td class="name">filmcraft-&lt;ver&gt;-linux-aarch64.deb</td></tr>
+            <tr><td>Fedora / RHEL / openSUSE</td><td class="name">filmcraft-&lt;ver&gt;-linux-x86_64.rpm</td><td class="name">filmcraft-&lt;ver&gt;-linux-aarch64.rpm</td></tr>
+            <tr><td>压缩包</td><td class="name">filmcraft-&lt;ver&gt;-linux-x86_64.tar.gz</td><td class="name">filmcraft-&lt;ver&gt;-linux-aarch64.tar.gz</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="tiles" style="margin-top:8px">
+        <div class="tile s6"><h3>RISC-V</h3><p><span class="mono">filmcraft-&lt;ver&gt;-linux-riscv64.tar.gz</span>（仅压缩包；需要 glibc 2.39+，例如 Ubuntu 24.04 或 Debian 13）。</p></div>
+        <div class="tile s6"><h3>安装位置</h3><p>压缩包安装程序把 FilmCraft、命令行工具与桌面集成放进 <span class="mono">~/.local</span>，无需管理员权限；<span class="mono">sudo ./install.sh --prefix /usr/local</span> 可为所有用户安装。再次运行会更新现有安装。</p></div>
+      </div>
+      <p style="font-size:12px;color:var(--dim-2);margin:9px 0 0">Gentoo（社区维护）：<a href="https://github.com/switch87/snakebyte-overlay" style="color:#B79BFF">::snakebyte overlay</a> 把 Linux 发布版打包为 <span class="mono">media-video/filmcraft-bin</span>，由社区维护，打包问题请向该 overlay 反馈。</p>
+    </div>
+
+    <div class="pane" id="pane-bsd">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th style="width:24%">构建</th><th>文件</th></tr></thead>
+          <tbody><tr><td>x86_64</td><td class="name">filmcraft-&lt;ver&gt;-freebsd-x86_64.tar.gz</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="pane" id="pane-web">
+      <div class="tbl-wrap">
+        <table class="tbl">
+          <thead><tr><th style="width:24%">构建</th><th>文件</th><th style="width:38%">备注</th></tr></thead>
+          <tbody><tr><td>静态站点</td><td class="name">filmcraft-web-&lt;ver&gt;.zip</td><td class="note">运行于现代浏览器；托管到任意静态服务器</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Crafting 系列 -->
+<section class="sec" id="crafting">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>Crafting 系列应用</h2>
+        <p class="sec-lead">FilmCraft 是 Crafting 系列应用之一：由 ArtCraft 团队出品的免费、开源创意工具，每一个都用 Rust 从零编写，且都能独立运行。</p>
+      </div>
+    </div>
+    <div class="appgrid">
+      <a class="app" href="https://github.com/storytold/photocraft"><img src="public/shots/icon-photocraft.png" alt=""><div><b>PhotoCraft</b><span>图像编辑：图层、蒙版、文字与 PSD</span></div></a>
+      <a class="app" href="https://github.com/storytold/vectorcraft"><img src="public/shots/icon-vectorcraft.png" alt=""><div><b>VectorCraft</b><span>矢量插画</span></div></a>
+      <a class="app here" href="https://github.com/storytold/filmcraft"><img src="public/shots/icon-filmcraft.png" alt=""><div><b>FilmCraft</b><span>视频剪辑、调色与声音 · 你在这里</span></div></a>
+      <a class="app" href="https://github.com/storytold/lightcraft"><img src="public/shots/icon-lightcraft.png" alt=""><div><b>LightCraft</b><span>照片库与 RAW 显影</span></div></a>
+      <a class="app" href="https://github.com/storytold/pdfcraft"><img src="public/shots/icon-pdfcraft.png" alt=""><div><b>PdfCraft</b><span>阅读、整理与保护 PDF</span></div></a>
+      <a class="app" href="https://github.com/storytold/effectcraft"><img src="public/shots/icon-effectcraft.png" alt=""><div><b>EffectCraft</b><span>动态图形与视觉特效</span></div></a>
+      <a class="app" href="https://github.com/storytold/designcraft"><img src="public/shots/icon-designcraft.png" alt=""><div><b>DesignCraft</b><span>页面排版与出版</span></div></a>
+      <a class="app" href="https://getartcraft.com/" style="border-style:dashed"><img src="public/shots/artcraft-mark.svg" alt="" style="border-radius:0"><div><b>ArtCraft</b><span>面向艺术家的 AI 图像与视频工作室</span></div></a>
+    </div>
+  </div>
+</section>
+
+<!-- 文档 -->
+<section class="sec" id="docs">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>文档</h2>
+        <p class="sec-lead">从环境搭建到分层规则，从控制协议到对等度检查清单。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>贡献指南</dt><dd>CONTRIBUTING.md</dd></div>
+        <div class="spec-row"><dt>架构</dt><dd>docs/architecture.md</dd></div>
+      </dl>
+    </div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th style="width:33%">文档</th><th>内容</th></tr></thead>
+        <tbody>
+          <tr><td class="name">CONTRIBUTING.md · docs/contributing.md</td><td class="note">环境搭建、质量门禁、提交规范，以及如何添加命令、特效、编解码器、面板与资源</td></tr>
+          <tr><td class="name">AGENTS.md</td><td class="note">每位贡献者都必须遵守的规则：资源、净室、许可证</td></tr>
+          <tr><td class="name">docs/architecture.md</td><td class="note">分层、数据模型、时间基准、命令系统、渲染与导出管线</td></tr>
+          <tr><td class="name">docs/testing.md</td><td class="note">单元、属性与 ffmpeg 对照测试，精度标准，基准测试</td></tr>
+          <tr><td class="name">docs/agents.md</td><td class="note">通过 MCP 与控制通道驱动 FilmCraft；智能体如何参与开发</td></tr>
+          <tr><td class="name">docs/control-protocol.md</td><td class="note">控制通道与 MCP 参考</td></tr>
+          <tr><td class="name">docs/project-files.md</td><td class="note">.fcproj 格式、schema 迁移、自动保存与崩溃恢复</td></tr>
+          <tr><td class="name">docs/graphics.md · docs/captions.md</td><td class="note">文字引擎、图形剪辑与工具；唱词轨与格式</td></tr>
+          <tr><td class="name">ROADMAP.md</td><td class="note">阶段、对等度数字、语言、下一步与发展日志</td></tr>
+          <tr><td class="name">docs/target-app-parity.md · gaps.md · roadmap.md</td><td class="note">对等度评估、差距排序清单、里程碑与当前重点</td></tr>
+          <tr><td class="name">codec / file-format / hardware / ui / localization parity</td><td class="note">分维度的对等度检查清单</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 许可 -->
+<section class="sec" id="license">
+  <div class="wrap">
+    <div class="sec-head">
+      <div>
+        <h2>许可与致谢</h2>
+        <p class="sec-lead">FilmCraft 采用双重许可：你可在 MIT 或 Apache-2.0 之间任选其一。版权所有 (c) 2026 ArtCraft Team 与 FilmCraft 贡献者。</p>
+      </div>
+      <dl class="spec">
+        <div class="spec-row"><dt>许可</dt><dd>MIT | Apache-2.0</dd></div>
+        <div class="spec-row"><dt>声明</dt><dd>NOTICE</dd></div>
+      </dl>
+    </div>
+    <div class="tiles">
+      <div class="tile s6"><h3>独立实现</h3><p>它不含任何专有代码、图标、图像、预设或 LUT，也不含 GPL 或 LGPL 代码；每个图标都用代码绘制，每个资源都是开放许可并具名署名（见 AGENTS.md）。ffmpeg 仅作为外部测试对照基准使用。</p></div>
+      <div class="tile s6"><h3>截图中的素材与音乐</h3><p>NASA 的阿波罗 11 号素材与空地语音来自 images.nasa.gov（美国政府公有领域，《活死人之夜》《魂魄出窍》《谜中谜》均为美国公有领域作品）；肖邦的《夜曲》Op. 48 No. 1 与《叙事曲》No. 1 由 Musopen 演奏并以 CC0 发布。媒体本身不在仓库中。</p></div>
+      <div class="tile s12"><h3>商标</h3><p>docs/brand/ 中的 ArtCraft 名称、字标与徽标是 ArtCraft Team 的商标，不受本许可证覆盖。它们只能原样、且只能作为本仓库与 FilmCraft 的一部分使用。分支与修改版本必须移除它们。打包的字体、图标、图像及其它资源保留各自的开放许可证，每一样都在 ATTRIBUTION.md 中按其作者、来源与许可证列出。</p></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer class="ft">
+  <div class="wrap">
+    <div class="join">
+      <div>
+        <h3>来和我们一起创作</h3>
+        <p>我们的 Discord 是所有类型艺术家相聚的地方：画画、拍摄、绘图、剪辑电影、排版的人，以及仍在摸索自己喜欢创作什么的人。分享你正在做的，寻求帮助，告诉我们哪里坏了，或者告诉我们你希望这些工具能做什么。</p>
+      </div>
+      <div class="join-cta">
+        <a class="btn btn-solid" href="https://discord.gg/artcraft">discord.gg/artcraft</a>
+        <a class="btn btn-ghost" href="https://getartcraft.com/">getartcraft.com</a>
+      </div>
+    </div>
+    <div class="ft-in">
+      <div>
+        <a class="brand" href="#top"><img src="public/shots/app-icon.png" alt=""><b>FilmCraft</b><i>alpha</i></a>
+        <p style="font-size:12.2px;color:var(--dim-2);line-height:1.8;max-width:30ch;margin:9px 0 0">视频剪辑、调色与声音。一款用纯 Rust 打造的开源专业非线性视频编辑器，由 ArtCraft 团队出品。</p>
+      </div>
+      <div class="ft-links">
+        <div class="ft-col">
+          <h4>产品</h4>
+          <a href="#editing">剪辑</a><a href="#color">调色</a><a href="#effects">特效</a><a href="#audio">音频</a>
+        </div>
+        <div class="ft-col">
+          <h4>能力</h4>
+          <a href="#formats">格式与编解码器</a><a href="#interchange">互通</a><a href="#agents">智能体</a><a href="#status">状态</a>
+        </div>
+        <div class="ft-col">
+          <h4>开始</h4>
+          <a href="#download">下载</a><a href="#start">快速上手</a><a href="#docs">文档</a><a href="#architecture">架构</a>
+        </div>
+        <div class="ft-col">
+          <h4>社区</h4>
+          <a href="https://discord.gg/artcraft">Discord</a><a href="https://getartcraft.com/">getartcraft.com</a>
+          <a href="https://github.com/storytold/filmcraft">GitHub</a><a href="https://www.star-history.com/?repos=storytold%2Ffilmcraft">Star 历史</a>
+        </div>
+      </div>
+    </div>
+    <div class="ft-bottom">
+      <span>MIT | Apache-2.0 · 版权所有 (c) 2026 ArtCraft Team 与 FilmCraft 贡献者</span>
+      <span class="mono">本站为 FilmCraft 中文介绍页 · 内容取自官方 README</span>
+    </div>
+  </div>
+</footer>
+
+<script>
+const shot = document.getElementById('benchShot');
+document.querySelectorAll('.ws button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.ws button').forEach(b => b.setAttribute('aria-selected', 'false'));
+    btn.setAttribute('aria-selected', 'true');
+    shot.style.opacity = 0;
+    setTimeout(() => { shot.src = 'public/shots/' + btn.dataset.img; shot.style.opacity = 1; }, 120);
+  });
+});
+
+function seeded(seed){
+  let s = seed;
+  return () => { s = (s * 1103515245 + 12345) % 2147483648; return s / 2147483648; };
+}
+document.querySelectorAll('[data-wave]').forEach(el => {
+  const rnd = seeded(Number(el.dataset.wave) * 977 + 13);
+  const n = 96;
+  let html = '';
+  for (let i = 0; i < n; i++) {
+    const env = Math.sin((i / n) * Math.PI) * 0.75 + 0.25;
+    const h = Math.max(8, Math.round((0.25 + rnd() * 0.75) * env * 100));
+    html += '<i style="height:' + h + '%"></i>';
+  }
+  el.innerHTML = html;
+});
+
+// 响度表：总 18 段，data-meter = 点亮段数
+document.querySelectorAll('[data-meter]').forEach(el => {
+  const lit = Number(el.dataset.meter);
+  const total = 18;
+  let html = '';
+  for (let i = 0; i < total; i++) {
+    const on = i < lit;
+    const cls = i >= 15 ? 'peak' : i >= 12 ? 'warn' : '';
+    html += '<i class="' + (on ? 'on ' + cls : '') + '"></i>';
+  }
+  el.innerHTML = html;
+});
+
+document.querySelectorAll('[data-seg]').forEach(el => {
+  const pct = Number(el.dataset.seg);
+  const total = 28;
+  let html = '';
+  for (let i = 0; i < total; i++) html += '<i class="' + (i < Math.round(total * pct / 100) ? 'on' : '') + '"></i>';
+  el.innerHTML = html;
+});
+
+document.querySelectorAll('.tabs input').forEach(input => {
+  input.addEventListener('change', () => {
+    document.querySelectorAll('.pane').forEach(p => p.classList.remove('on'));
+    const pane = document.getElementById('pane-' + input.id.replace('os-', ''));
+    if (pane) pane.classList.add('on');
+  });
+});
+
+const prog = document.getElementById('prog');
+function onScroll(){
+  const h = document.documentElement;
+  const p = h.scrollTop / (h.scrollHeight - h.clientHeight || 1);
+  prog.style.width = (p * 100).toFixed(2) + '%';
+}
+document.addEventListener('scroll', onScroll, { passive: true });
+onScroll();
+</script>
+</body>
+</html>

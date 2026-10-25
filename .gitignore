@@ -1,0 +1,10 @@
+node_modules
+dist
+.DS_Store
+*.local
+
+# 本地校验脚本与截图产物
+tools/
+
+# 助手的工作记忆
+.workbuddy/
