@@ -6,7 +6,8 @@ import { Audio, Captions } from './sections/sound'
 import { Export, Formats, Interchange } from './sections/formats'
 import { Agents, Everywhere, Start } from './sections/agents'
 import { Architecture, Status } from './sections/status'
-import { Crafting, Docs, Download, License } from './sections/download'
+import { Crafting, Download, License } from './sections/download'
+import { Docs } from './sections/docs'
 
 export default function App() {
   return (

@@ -1,7 +1,7 @@
 import type { ReactElement, ReactNode } from 'react'
 import { CodeBlock, Section, Tile } from '../components/ui'
 import { FreeBsdMark, LinuxMark, MacMark, WebMark, WindowsMark } from '../components/os-marks'
-import { craftApps, docs } from '../data/content'
+import { craftApps } from '../data/content'
 
 /** 统一指向最新发布：版本号更新频繁，不在页面里写死 */
 const RELEASES = 'https://github.com/storytold/filmcraft/releases/latest'
@@ -185,41 +185,6 @@ export function Crafting() {
             </div>
           </a>
         ))}
-      </div>
-    </Section>
-  )
-}
-
-export function Docs() {
-  return (
-    <Section
-      id="docs"
-      title="文档"
-      lead="从环境搭建到分层规则，从控制协议到对等度检查清单。"
-      spec={[
-        { label: '贡献指南', value: 'CONTRIBUTING.md' },
-        { label: '架构', value: 'docs/architecture.md' },
-      ]}
-    >
-      <div className="tbl-wrap">
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th scope="col" style={{ width: '33%' }}>
-                文档
-              </th>
-              <th scope="col">内容</th>
-            </tr>
-          </thead>
-          <tbody>
-            {docs.map((doc) => (
-              <tr key={doc.file}>
-                <td className="name">{doc.file}</td>
-                <td className="note">{doc.desc}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
       </div>
     </Section>
   )

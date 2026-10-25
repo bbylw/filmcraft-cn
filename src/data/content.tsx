@@ -137,18 +137,69 @@ export const codecs: Codec[] = [
   },
 ]
 
-export const docs: { file: string; desc: string }[] = [
-  { file: 'CONTRIBUTING.md · docs/contributing.md', desc: '环境搭建、质量门禁、提交规范，以及如何添加命令、特效、编解码器、面板与资源' },
-  { file: 'AGENTS.md', desc: '每位贡献者都必须遵守的规则：资源、净室、许可证' },
-  { file: 'docs/architecture.md', desc: '分层、数据模型、时间基准、命令系统、渲染与导出管线' },
-  { file: 'docs/testing.md', desc: '单元、属性与 ffmpeg 对照测试，精度标准，基准测试' },
-  { file: 'docs/agents.md', desc: '通过 MCP 与控制通道驱动 FilmCraft；智能体如何参与开发' },
-  { file: 'docs/control-protocol.md', desc: '控制通道与 MCP 参考' },
-  { file: 'docs/project-files.md', desc: '.fcproj 格式、schema 迁移、自动保存与崩溃恢复' },
-  { file: 'docs/graphics.md · docs/captions.md', desc: '文字引擎、图形剪辑与工具；唱词轨与格式' },
-  { file: 'ROADMAP.md', desc: '阶段、对等度数字、语言、下一步与发展日志' },
-  { file: 'docs/target-app-parity.md · gaps.md · roadmap.md', desc: '对等度评估、差距排序清单、里程碑与当前重点' },
-  { file: 'codec / file-format / hardware / ui / localization parity', desc: '分维度的对等度检查清单' },
+export type DocEntry = { path: string; desc: string }
+
+export type DocGroup = { title: string; docs: DocEntry[] }
+
+/** 全部路径都对应仓库 main 分支上的真实文件 */
+export const docGroups: DocGroup[] = [
+  {
+    title: '上手与贡献',
+    docs: [
+      { path: 'CONTRIBUTING.md', desc: '环境搭建、质量门禁与提交规范' },
+      { path: 'docs/contributing.md', desc: '如何添加命令、特效、编解码器、面板与资源' },
+      { path: 'AGENTS.md', desc: '资源、净室与许可证的硬性规则' },
+      { path: 'docs/contributors.md', desc: '「关于」窗口里的贡献者与模型署名规则' },
+      { path: 'docs/releasing.md', desc: '发布流程：构建安装包、生成草稿 Release 与版本号' },
+    ],
+  },
+  {
+    title: '架构与数据',
+    docs: [
+      { path: 'docs/architecture.md', desc: '分层、数据模型、时间基准、命令系统、渲染与导出管线' },
+      { path: 'docs/project-files.md', desc: '.fcproj 格式、schema 迁移、自动保存与崩溃恢复' },
+      { path: 'docs/graphics.md', desc: '文字引擎、图形剪辑与钢笔工具' },
+      { path: 'docs/captions.md', desc: '唱词轨的格式与编辑' },
+      { path: 'docs/transcripts.md', desc: '转写面板：按文本标记入出点并生成字幕' },
+      { path: 'docs/web.md', desc: '网页端（WebAssembly）的构建与部署' },
+    ],
+  },
+  {
+    title: '智能体与协议',
+    docs: [
+      { path: 'docs/agents.md', desc: '通过 MCP 与控制通道驱动 FilmCraft' },
+      { path: 'docs/control-protocol.md', desc: '控制通道与 MCP 的完整参考' },
+      { path: '.mcp.json', desc: '仓库内置的 MCP 服务器配置' },
+    ],
+  },
+  {
+    title: '测试与对等度',
+    docs: [
+      { path: 'docs/testing.md', desc: '单元、属性与 ffmpeg 对照测试，精度标准' },
+      { path: 'docs/performance.md', desc: '基准测试、交互构建与大素材上的瓶颈' },
+      { path: 'docs/codec-parity.md', desc: '编解码器对等度检查清单' },
+      { path: 'docs/file-format-parity.md', desc: '文件格式对等度检查清单' },
+      { path: 'docs/hardware-parity.md', desc: '硬件解码与编码对等度' },
+      { path: 'docs/ui-parity.md', desc: '界面、面板与快捷键对等度' },
+      { path: 'docs/localization-parity.md', desc: '本地化与语言对等度' },
+    ],
+  },
+  {
+    title: '路线与进度',
+    docs: [
+      { path: 'ROADMAP.md', desc: '阶段、对等度数字与下一步' },
+      { path: 'docs/target-app-parity.md', desc: '与目标应用（Premiere Pro 2026）的对等度评估' },
+      { path: 'docs/gaps.md', desc: '差距排序清单：最影响真实工作的短板' },
+      { path: 'docs/roadmap.md', desc: '里程碑与当前重点' },
+    ],
+  },
+  {
+    title: '设备与交互',
+    docs: [
+      { path: 'docs/keyboard.md', desc: 'Premiere Pro 兼容的快捷键预设' },
+      { path: 'docs/monitors.md', desc: '源监视器与节目录监视器的显示选项' },
+    ],
+  },
 ]
 
 export const crates: { layer: string; list: string }[] = [
